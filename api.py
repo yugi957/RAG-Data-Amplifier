@@ -91,6 +91,18 @@ def query_random_sample(filter, n_results):
         "metadatas": metadatas
     }
 
+def query_semantic(text : str, filter, n_results=5):
+    chroma_client = chromadb.PersistentClient(path=PERSISTENT_STORAGE, settings=settings)
+    collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
+    
+    query_result = collection.query(
+        query_texts=[text],
+        where=filter,
+        n_results=n_results
+    )
+    return query_result
+
+
 def create_filter(metadata):
     filter = {"$and": []}
     for key, (input_type, val1, val2) in metadata.items():

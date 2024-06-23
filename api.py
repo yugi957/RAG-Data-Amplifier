@@ -75,20 +75,16 @@ def query_random_sample(filter, n_results):
     
     all = query_all(filter)
     
+    documents = all["documents"]
     ids = all["ids"]
-    texts = all["documents"]
     metadatas = all["metadatas"]
 
-    zipped = list(zip(ids, texts, metadatas))
-    random.shuffle(zipped)
-    zipped = zipped[:min(n_results, len(zipped))]
-
-    ids, texts, metadatas = zip(*zipped)
+    random_sample = random.sample(list(zip(documents, ids, metadatas)), n_results)
 
     return {
-        "ids": ids,
-        "texts": texts,
-        "metadatas": metadatas
+        "documents": [doc for doc, _, _ in random_sample],
+        "ids": [id for _, id, _ in random_sample],
+        "metadatas": [metadata for _, _, metadata in random_sample]
     }
 
 def query_semantic(text : str, filter, n_results=5):
@@ -135,7 +131,7 @@ from pprint import pprint
 # pprint(get_metadata_type_and_classes())
 
 filter = create_filter({
-    "subreddit": ("object", ["anime"], None),
+    "subreddit": ("object", ["anime", "harrypotter"], None),
     "ups": ("int64", 0, 100),
     "authorisgold" : ("float64", 1, 1)
 })
@@ -146,6 +142,7 @@ pprint(filter)
 
 pprint(query_random_sample(filter, 5))
 
+# pprint(query_semantic("I love anime", filter, 5))
 # {
 #     "$or"[
 #         "subreddit": {

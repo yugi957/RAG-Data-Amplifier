@@ -80,11 +80,11 @@ def process_file(file_path):
     df.drop(columns=['text'], inplace=True)
     metadatas = df.to_dict(orient='records')
     
-    # collection.add(
-    #     documents=texts,
-    #     ids=ids,
-    #     metadatas=metadatas
-    # )
+    collection.add(
+        documents=texts,
+        ids=ids,
+        metadatas=metadatas
+    )
 
     with progress_lock:
         progress_data["progress"] = 85
@@ -124,7 +124,6 @@ def process_augmentation(tags, modifier):
     if modifier:
         retrieval = api.query_semantic(modifier, filter)
     n_per_access = 60
-        print(f"Retrieval: {retrieval}", flush=True)
     n_per_access = 20
     total = 3000
     df = pd.DataFrame(columns=["text"])

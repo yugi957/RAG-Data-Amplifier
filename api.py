@@ -65,15 +65,37 @@ def query_random_sample(filters):
         where=filters,
     )
 
+def create_filter(metadata):
+    filter = {"$or": []}
+    for key, (input_type, val1, val2) in metadata.items():
+        if input_type == "object":
+            filter["$or"].append({key: {"$eq": val1}})
+        else:
+            filter["$or"].append(
+                {
+                    "$and" : [
+                        {key: {"$gte": val1}},
+                        {key: {"$lte": val2}}
+                    ]
+                }
+            )
+    return filter
+
 from pprint import pprint
 
-df = pd.read_csv('./dataset/concat-formatted-reddit-dataset.csv')
-pprint(store_dataframe(df))
+# df = pd.read_csv('./dataset/concat-formatted-reddit-dataset.csv')
+# pprint(store_dataframe(df))
 
-pprint(query("I love anime"))
+# pprint(query("I love anime"))
 
-pprint(get_metadata_type_and_classes())
+# pprint(get_metadata_type_and_classes())
 
+
+
+pprint(create_filter({
+    "subreddit": ("object", "anime", None),
+    "ups": ("int64", 0, 100),
+}))
 
 # {
 #     "$or"[

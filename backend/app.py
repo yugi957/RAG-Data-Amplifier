@@ -12,7 +12,6 @@ import torch
 import api
 from api import generate_data
 
-DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
 app = Flask(__name__)
 CORS(app)

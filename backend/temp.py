@@ -1,13 +1,12 @@
 import os
 import pandas as pd
 
-# if is csv files
-files = [f for f in os.listdir('./dataset/reddit-dataset') if f.endswith('.csv')]
-
 
 initial_path = './dataset/reddit-dataset/'
 save_path = './dataset/formatted-reddit-dataset/'
 
+
+files = [f for f in os.listdir(initial_path) if f.endswith('.csv')]
 
 os.mkdir(save_path)
 
@@ -32,11 +31,13 @@ for file in files:
     df = df[df['text'].str.strip().astype(bool)]
     df = df.dropna()
 
+    df.drop(columns=['id','author',], inplace=True)
     # only first 1000 rows
-    df = df.head(1000)
+    df = df.head(100)
     
     #save to new file
     df.to_csv(f"{save_path}{file}", index=False)
 
 
     print(df.head())
+

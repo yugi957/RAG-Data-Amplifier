@@ -7,7 +7,9 @@ from threading import Lock
 import chromadb
 import pandas as pd
 from chromadb.utils import embedding_functions
+from chromadb.config import Settings
 import torch
+import api
 
 
 app = Flask(__name__)
@@ -43,6 +45,10 @@ def upload_file():
         return jsonify({"message": "File uploaded successfully", "filename": file.filename}), 200
 
 def process_file(file_path):
+    settings = Settings(
+        allow_reset=True,
+    )
+
     COLLECTION_NAME = "collection"
     EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
     PERSISTENT_STORAGE = "vector_db"
@@ -56,7 +62,8 @@ def process_file(file_path):
         socketio.emit('progress', {'progress': 15})
 
     df = pd.read_csv(file_path)
-    chroma_client = chromadb.PersistentClient(path=PERSISTENT_STORAGE)
+    chroma_client = chromadb.PersistentClient(path=PERSISTENT_STORAGE, settings=settings)
+    chroma_client.reset()
     collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
     
     
@@ -103,18 +110,28 @@ def get_tags():
 @app.route('/augment', methods=['POST'])
 def augment_data():
     data = request.get_json()
-    tags = data.get('tags', [])
     modifier = data.get('modifier', '')
 
-    socketio.start_background_task(target=process_augmentation, tags=tags, modifier=modifier)
+    socketio.start_background_task(target=process_augmentation, tags=data['items'], modifier=modifier)
     return jsonify({"message": "Augmentation started"}), 200
 
 def process_augmentation(tags, modifier):
-    for progress in range(0, 101, 40):
-        socketio.sleep(1)
-        with progress_lock:
-            progress_data["augment_progress"] = progress
-            socketio.emit('augment_progress', {'progress': progress})
+    with progress_lock:
+        progress_data["augment_progress"] = 25
+        socketio.emit('augment_progress', {'progress': 25})
+
+    filter = api.create_filter(tags)
+    print(filter)
+
+    with progress_lock:
+        progress_data["augment_progress"] = 50
+        socketio.emit('augment_progress', {'progress': 50})
+
+    if modifier:
+        output = api.query_semantic(modifier, filter)
+    else:
+        output = api.query_random_sample(filter)
+    print(output)
     
     # Simulate data augmentation and generating sample texts
     sample_texts = ["Sample text with tags " + ", ".join(tags) + f" and modifier {modifier}"]

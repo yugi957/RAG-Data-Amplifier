@@ -2,6 +2,7 @@ from constant import EMBEDDING_FUNCTION, COLLECTION_NAME, PERSISTENT_STORAGE
 import chromadb
 import pandas as pd
 import os
+import random
 import json
 
 from chromadb.config import Settings
@@ -57,24 +58,50 @@ def query(text : str):
     return query_result
 
 
-def query_random_sample(filter):
+def query_all(filter):
     chroma_client = chromadb.PersistentClient(path=PERSISTENT_STORAGE, settings=settings)
     collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
     
     query_result = collection.get(
-        where=filter,
+        where=filter
     )
 
     return query_result
+
+
+def query_random_sample(filter, n_results):
+    chroma_client = chromadb.PersistentClient(path=PERSISTENT_STORAGE, settings=settings)
+    collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
+    
+    all = query_all(filter)
+    
+    ids = all["ids"]
+    texts = all["documents"]
+    metadatas = all["metadatas"]
+
+    zipped = list(zip(ids, texts, metadatas))
+    random.shuffle(zipped)
+    zipped = zipped[:min(n_results, len(zipped))]
+
+    ids, texts, metadatas = zip(*zipped)
+
+    return {
+        "ids": ids,
+        "texts": texts,
+        "metadatas": metadatas
+    }
 
 def create_filter(metadata):
     filter = {"$and": []}
     for key, (input_type, val1, val2) in metadata.items():
         if input_type == "object":
-            or_class_filter = {"$or": []}
-            for val in val1:
-                or_class_filter["$or"].append({key: {"$eq": val}})
-            filter["$and"].append(or_class_filter)
+            if len(val1) == 1:
+                filter["$and"].append({key: {"$eq": val1[0]}})
+            else:
+                or_class_filter = {"$or": []}
+                for val in val1:
+                    or_class_filter["$or"].append({key: {"$eq": val}})
+                filter["$and"].append(or_class_filter)
         else:
             filter["$and"].append(
                 {
@@ -96,13 +123,16 @@ from pprint import pprint
 # pprint(get_metadata_type_and_classes())
 
 filter = create_filter({
-    "subreddit": ("object", ["anime", "harrypotter"], None),
+    "subreddit": ("object", ["anime"], None),
     "ups": ("int64", 0, 100),
+    "authorisgold" : ("float64", 1, 1)
 })
 
 pprint(filter)
 
-pprint(query_random_sample(filter))
+# pprint(query_all(filter))
+
+pprint(query_random_sample(filter, 5))
 
 # {
 #     "$or"[

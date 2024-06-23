@@ -128,19 +128,21 @@ def process_augmentation(tags, modifier):
 
     if modifier:
         retrieval = api.query_semantic(modifier, filter)
-    n_per_access = 20
+    n_per_access = 60
     df = pd.DataFrame(columns=["text"])
-    for i in range(int(200 / n_per_access)):
+    for i in range(int(3000 / n_per_access)):
             if not modifier:
                 retrieval = api.query_random_sample(filter)
-            print(f'{i} of {200/n_per_access}', flush=True)
-            generation = generate_data(retrieval)
+            print(f'{i} of {3000/n_per_access}', flush=True)
+            generation = generate_data(retrieval, n_per_access)
+            print(generation, flush=True)
+            # generation = api.split_generated_text(generation)
             for text in generation:
                 df.loc[len(df.index)] = text
     # print(retrieval, flush=True)
     # print('\n')
     # print(generation, flush=True)
-    # print(df)
+    print(df, flush=True)
     
     # Simulate data augmentation and generating sample texts
     sample_texts = ["Sample text with tags " + ", ".join(tags) + f" and modifier {modifier}"]

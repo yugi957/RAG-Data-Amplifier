@@ -121,11 +121,12 @@ def augment_data():
 def process_augmentation(tags, modifier):
     filter = api.create_filter(tags)
 
+    retrieval = ''
     if modifier:
         retrieval = api.query_semantic(modifier, filter)
+        print(f"Retrieval: {retrieval}", flush=True)
     n_per_access = 60
-    n_per_access = 20
-    total = 3000
+    total = 600
     df = pd.DataFrame(columns=["text"])
     for i in range(int(total / n_per_access)):
             with progress_lock:

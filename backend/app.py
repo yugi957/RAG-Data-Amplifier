@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import os
@@ -16,6 +16,9 @@ from api import generate_data
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+FILE_DIRECTORY = './download'
+OUTPUT_FILE_NAME = 'output.csv'
 
 UPLOAD_FOLDER = 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
@@ -77,11 +80,11 @@ def process_file(file_path):
     df.drop(columns=['text'], inplace=True)
     metadatas = df.to_dict(orient='records')
     
-    collection.add(
-        documents=texts,
-        ids=ids,
-        metadatas=metadatas
-    )
+    # collection.add(
+    #     documents=texts,
+    #     ids=ids,
+    #     metadatas=metadatas
+    # )
 
     with progress_lock:
         progress_data["progress"] = 85
@@ -116,27 +119,27 @@ def augment_data():
     return jsonify({"message": "Augmentation started"}), 200
 
 def process_augmentation(tags, modifier):
-    with progress_lock:
-        progress_data["augment_progress"] = 25
-        socketio.emit('augment_progress', {'progress': 25})
-
     filter = api.create_filter(tags)
-
-    with progress_lock:
-        progress_data["augment_progress"] = 50
-        socketio.emit('augment_progress', {'progress': 50})
 
     if modifier:
         retrieval = api.query_semantic(modifier, filter)
     n_per_access = 60
+        print(f"Retrieval: {retrieval}", flush=True)
+    n_per_access = 20
+    total = 3000
     df = pd.DataFrame(columns=["text"])
-    for i in range(int(3000 / n_per_access)):
+    for i in range(int(total / n_per_access)):
+            with progress_lock:
+                progress_data["augment_progress"] = 100 * i * n_per_access / total
+                socketio.emit('augment_progress', {'progress': 100 * i * n_per_access / total})
+
             if not modifier:
                 retrieval = api.query_random_sample(filter)
-            print(f'{i} of {3000/n_per_access}', flush=True)
-            generation = generate_data(retrieval, n_per_access)
+                print(f"Retrieval: {retrieval} from no modifier", flush=True)
+            print(f'{i} of {total/n_per_access}', flush=True)
+            
+            generation = generate_data(retrieval)
             print(generation, flush=True)
-            # generation = api.split_generated_text(generation)
             for text in generation:
                 df.loc[len(df.index)] = text
     # print(retrieval, flush=True)
@@ -150,6 +153,22 @@ def process_augmentation(tags, modifier):
         progress_data["augment_sample_texts"] = sample_texts
     socketio.emit('augment_progress', {'progress': 100})
     socketio.emit('augment_completed', {'sample_texts': sample_texts})
+
+    df.to_csv(os.path.join(FILE_DIRECTORY, OUTPUT_FILE_NAME), index=False)
+
+@app.route('/download', methods=['GET'])
+def download_file():
+    try:
+        # Full path to the file
+        file_path = os.path.join(FILE_DIRECTORY, OUTPUT_FILE_NAME)
+
+        if os.path.exists(file_path):
+            return send_file(file_path, as_attachment=True, download_name=OUTPUT_FILE_NAME)
+        else:
+            return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

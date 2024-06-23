@@ -92,6 +92,22 @@ def query_semantic(text : str, filter, n_results=5):
 
 
 def create_filter(metadata):
+    if metadata is None:
+        return {}
+    if len(metadata.items()) == 1:
+        key, (input_type, val1, val2) = metadata.items()[0]
+        if input_type == "object":
+            if len(val1) == 1:
+                return {key: {"$eq": val1[0]}}
+            else:
+                or_class_filter = {"$or": []}
+                for val in val1:
+                    or_class_filter["$or"].append({key: {"$eq": val}})
+
+                return or_class_filter
+        else:
+            return {key: {"$gte": val1, "$lte": val2}}
+
     filter = {"$and": []}
     for key, (input_type, val1, val2) in metadata.items():
         if input_type == "object":

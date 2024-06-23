@@ -4,8 +4,10 @@ import pandas as pd
 import os
 import random
 import json
-
+from sklearn.manifold import TSNE
+import numpy as np
 from chromadb.config import Settings
+import matplotlib.pyplot as plt
 
 settings = Settings(
     allow_reset=True,
@@ -47,23 +49,13 @@ def get_metadata_type_and_classes():
         return json.load(f)
     
 
-def query(text : str):
-    chroma_client = chromadb.PersistentClient(path=PERSISTENT_STORAGE, settings=settings)
-    collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
-    
-    query_result = collection.query(
-        query_texts=[text],
-        n_results=5
-    )
-    return query_result
-
-
 def query_all(filter):
     chroma_client = chromadb.PersistentClient(path=PERSISTENT_STORAGE, settings=settings)
     collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
     
     query_result = collection.get(
-        where=filter
+        where=filter,
+        include=["documents", "metadatas", "embeddings"]
     )
 
     return query_result
@@ -121,28 +113,110 @@ def create_filter(metadata):
             )
     return filter
 
+
+def middle_embedding_vectordb(filter):
+    all = query_all(filter)
+    embeddings = all["embeddings"]
+    embeddings = np.array(embeddings)
+    middle = embeddings.mean(axis=0)
+    return middle
+    
+
+def distances_from_middle_db(middle, filter):
+    chroma_client = chromadb.PersistentClient(path=PERSISTENT_STORAGE, settings=settings)
+    collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
+    
+    all = query_all(filter)
+    embeddings = all["embeddings"]
+    embeddings = np.array(embeddings)
+    distances = np.linalg.norm(embeddings - middle, axis=1)
+    return distances
+
+def distances_from_middle(middle, embeddings):
+    distances = np.linalg.norm(embeddings - middle, axis=1)
+    return distances
+
+def histogram(db_distances, generated_distances):
+    plt.hist(db_distances, bins=100, alpha=0.5, label='original')
+    plt.hist(generated_distances, bins=100, alpha=0.5, label='generated')
+    plt.legend(loc='upper right')
+    plt.show()
+
+
+def generate_embeddings(df : pd.DataFrame):
+    texts = df['text'].tolist()
+    embeddings = EMBEDDING_FUNCTION(texts)
+    embeddings = np.array(embeddings)
+    return embeddings
+
+
+# def average_embedding(embeddings):
+#     return sum(embeddings) / len(embeddings)
+
+# def tsne_graph(dfs : list[pd.DataFrame]):
+#     embeddings = []
+#     for df in dfs:
+#         embeddings += generate_embeddings(df)
+    
+#     tsne = TSNE(EMBEDDING_FUNCTION.models[0].embedding_size)
+#     tsne_results = tsne.fit_transform(embeddings)
+
+#     df_subset['tsne-2d-one'] = tsne_results[:,0]
+#     df_subset['tsne-2d-two'] = tsne_results[:,1]
+
+#     plt.figure(figsize=(16,10))
+#     sns.scatterplot(
+#         x="tsne-2d-one", y="tsne-2d-two",
+#         hue="y",
+#         palette=sns.color_palette("hls", 10),
+#         data=df_subset,
+#         legend="full",
+#         alpha=0.3
+#     )
+
+    
+
 from pprint import pprint
 
-# df = pd.read_csv('./dataset/concat-formatted-reddit-dataset.csv')
+df = pd.read_csv('./dataset/concat-formatted-reddit-dataset.csv')
 # pprint(store_dataframe(df))
 
 # pprint(query("I love anime"))
 
 # pprint(get_metadata_type_and_classes())
 
+subreddits = df['subreddit'].unique()
+
 filter = create_filter({
-    "subreddit": ("object", ["anime", "harrypotter"], None),
+    "subreddit": ("object", subreddits, None),
     "ups": ("int64", 0, 100),
     "authorisgold" : ("float64", 1, 1)
 })
+
+middle = middle_embedding_vectordb(filter)
+distances1 = distances_from_middle_db(middle, filter)
+
+filter = create_filter({
+    "subreddit": ("object", subreddits, None),
+    "ups": ("int64", 0, 10),
+    "authorisgold" : ("float64", 1, 1)
+})
+
+middle = middle_embedding_vectordb(filter)
+distances2 = distances_from_middle_db(middle, filter)
+
+
+histogram(distances1, distances2)
+
+
 
 # pprint(filter)
 
 # pprint(query_all(filter))
 
-pprint(query_random_sample(filter, 5))
+# pprint(query_random_sample(filter, 5))
 
-pprint(query_semantic("Generate a ton of weeb data", filter, 5))
+# pprint(query_semantic("Generate a ton of weeb data", filter, 5))
 
 
 # {

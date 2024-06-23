@@ -76,11 +76,11 @@ def process_file(file_path):
     df.drop(columns=['text'], inplace=True)
     metadatas = df.to_dict(orient='records')
     
-    # collection.add(
-    #     documents=texts,
-    #     ids=ids,
-    #     metadatas=metadatas
-    # )
+    collection.add(
+        documents=texts,
+        ids=ids,
+        metadatas=metadatas
+    )
 
     with progress_lock:
         progress_data["progress"] = 85

@@ -20,6 +20,7 @@ socket.on('augment_progress', (data) => {
 
 socket.on('augment_completed', (data) => {
     displaySampleTexts(data.sample_texts);
+    displayDataAnalysis(data.charts);
     document.getElementById('downloadGeneratedData').disabled = false;
     confetti({
         particleCount: 100,
@@ -220,9 +221,18 @@ function displaySampleTexts(sampleTexts) {
     });
 }
 
-async function generateClusters() {
-    // Implement the logic to generate clusters here
-    alert("Generate Clusters button clicked!");
+function displayDataAnalysis(charts) {
+    const analysisDiv = document.querySelector('.analysis');
+    analysisDiv.innerHTML = '';
+    charts.forEach(chart => {
+        const canvas = document.createElement('canvas');
+        analysisDiv.appendChild(canvas);
+        new Chart(canvas, chart);
+    });
+}
+
+async function displayDataAnalysis() {
+
 }
 
 async function downloadFile() {

@@ -124,8 +124,7 @@ def process_augmentation(tags, modifier):
     if modifier:
         retrieval = api.query_semantic(modifier, filter)
     n_per_access = 60
-    n_per_access = 20
-    total = 3000
+    total = 60
     df = pd.DataFrame(columns=["text"])
     for i in range(int(total / n_per_access)):
             with progress_lock:
@@ -145,13 +144,15 @@ def process_augmentation(tags, modifier):
     # print('\n')
     # print(generation, flush=True)
     print(df, flush=True)
+
+    histogram_b64 = api.generate_histogram(filter)
     
     # Simulate data augmentation and generating sample texts
     sample_texts = ["Sample text with tags " + ", ".join(tags) + f" and modifier {modifier}"]
     with progress_lock:
         progress_data["augment_sample_texts"] = sample_texts
     socketio.emit('augment_progress', {'progress': 100})
-    socketio.emit('augment_completed', {'sample_texts': sample_texts})
+    socketio.emit('augment_completed', {'sample_texts': sample_texts, 'charts': histogram_b64})
 
     df.to_csv(os.path.join(FILE_DIRECTORY, OUTPUT_FILE_NAME), index=False)
 
@@ -168,6 +169,7 @@ def download_file():
     except Exception as e:
         print(e)
         return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

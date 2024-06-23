@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import re
 from groq import Groq
+import base64
+from io import BytesIO
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -26,7 +28,7 @@ settings = Settings(
 load_dotenv()
 
 # client = OpenAI(
-#     api_key=os.environ.get('OPENAI_API_KEY')
+    # api_key=os.environ.get('OPENAI_API_KEY')
 # )
 client = Groq(
     api_key=os.environ.get("GROQ_API_KEY"),
@@ -172,8 +174,6 @@ def generate_data(shots, n_per_access=10):
         return jsonify({"error": str(e)}), 500
 
 
-
-
 def query_semantic(text: str, filter, n_results=10):
     chroma_client = chromadb.PersistentClient(
         path=PERSISTENT_STORAGE, settings=settings)
@@ -267,7 +267,18 @@ def histogram(db_distances, generated_distances):
     plt.hist(db_distances, bins=100, alpha=0.5, label='original')
     plt.hist(generated_distances, bins=100, alpha=0.5, label='generated')
     plt.legend(loc='upper right')
-    plt.savefig(f"{DIR_PATH}/download/histogram.png")
+    
+    # Save plot to a BytesIO buffer
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+
+    # Encode buffer to base64 string
+    img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+
+    buf.close()
+
+    return img_base64
 
 
 def generate_embeddings(df: pd.DataFrame):
@@ -284,7 +295,7 @@ def generate_histogram(filter):
     embeddings = generate_embeddings(df)
     distances_generated = distances_from_middle(middle, embeddings)
 
-    histogram(distances_original, distances_generated)
+    return histogram(distances_original, distances_generated)
 
 
 

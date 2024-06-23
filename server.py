@@ -4,6 +4,24 @@ import openai
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+from transformers import AutoTokenizer, AutoModel
+import chromadb
+from chromadb.utils import embedding_functions
+from test import get_random_sample
+
+CHROMA_DATA_PATH = "chroma_data/"
+EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+COLLECTION_NAME = "fast_docs"
+
+# Initialize Chroma client and collection
+client = chromadb.PersistentClient(path=CHROMA_DATA_PATH)
+embedding_func = embedding_functions.SentenceTransformerEmbeddingFunction(
+    model_name=EMBED_MODEL
+)
+
+collection = client.get_collection(
+    name=COLLECTION_NAME,
+)
 
 app = Flask(__name__)
 
@@ -24,32 +42,25 @@ def few_shot_prompt():
     data = request.get_json()
 
     # Retrieve examples and the input prompt from the request
-    examples = data.get('examples', [])
-    prompt = data.get('prompt', '')
-
     # Construct the few-shot prompt
-    few_shot_prompt = ""
-    for example in examples:
-        few_shot_prompt += f"Q: {example['question']}\nA: {example['answer']}\n\n"
-    few_shot_prompt += f"Q: {prompt}\nA:"
+    random_shots = get_random_sample(collection, 5)
+    few_shot_prompt = "Use these documents::::"
+    for shot in random_shots['documents']:
+        few_shot_prompt += f"{shot}\n\n"
+    few_shot_prompt += f":::to generate 10 different texts that are similar to those documents considering context, writing style, and topic\n"
 
     # Make a request to the OpenAI API using the new interface
     try:
         stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # or another suitable model
+            model="gpt-4o",  # or another suitable model
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": few_shot_prompt}
             ],
-            max_tokens=150
+            max_tokens=1500
         )
-        print(stream)
+        # print(stream)
         response = stream.choices[0].message.content
-        # for chunk in stream:
-            # response += chunk.choices[0].delta.content or ""
-
-        # Extract and return the generated response
-        # generated_text = response['choices'][0]['message']['content'].strip()
         return jsonify({"response": response})
 
     except openai.APIStatusError as e:

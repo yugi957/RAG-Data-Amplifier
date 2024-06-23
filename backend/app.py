@@ -12,6 +12,7 @@ import torch
 import api
 from api import generate_data
 
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
 app = Flask(__name__)
 CORS(app)
@@ -123,6 +124,7 @@ def process_augmentation(tags, modifier):
 
     if modifier:
         retrieval = api.query_semantic(modifier, filter)
+        print(f"Retrieval: {retrieval}", flush=True)
     n_per_access = 20
     df = pd.DataFrame(columns=["text"])
     for i in range(int(200 / n_per_access)):
@@ -132,9 +134,11 @@ def process_augmentation(tags, modifier):
 
             if not modifier:
                 retrieval = api.query_random_sample(filter)
+                print(f"Retrieval: {retrieval} from no modifier", flush=True)
             print(f'{i} of {200/n_per_access}', flush=True)
             
             generation = generate_data(retrieval)
+            print(generation)
             for text in generation:
                 df.loc[len(df.index)] = text
     # print(retrieval, flush=True)

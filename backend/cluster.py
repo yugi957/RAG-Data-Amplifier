@@ -9,6 +9,8 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
+import base64
+from io import BytesIO
 
 
 CHROMA_DATA_PATH = "chroma_data/"
@@ -51,4 +53,15 @@ def cluster_and_visualize(embeddings):
     plt.xlabel('t-SNE dimension 1')
     plt.ylabel('t-SNE dimension 2')
     plt.legend()
-    plt.show()
+    
+    # Save plot to a BytesIO buffer
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+
+    # Encode buffer to base64 string
+    img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+
+    buf.close()
+
+    return img_base64

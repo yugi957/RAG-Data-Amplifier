@@ -11,6 +11,7 @@ from chromadb.config import Settings
 import torch
 import api
 from api import generate_data
+import cluster
 
 
 app = Flask(__name__)
@@ -168,9 +169,11 @@ def process_augmentation(tags, modifier):
     df.to_csv(os.path.join(FILE_DIRECTORY, OUTPUT_FILE_NAME), index=False)
 
     histogram_b64 = api.generate_histogram(filter)
-    print(histogram_b64)
+
+    embeddings = cluster.generate_embeddings(df)
+    cluster_b64 = cluster.cluster_and_visualize(embeddings)
     socketio.emit('augment_completed', {
-                  'sample_texts': sample_texts, 'charts': [histogram_b64]})
+                  'sample_texts': sample_texts, 'charts': [histogram_b64, cluster_b64]})
 
 
 @app.route('/download', methods=['GET'])

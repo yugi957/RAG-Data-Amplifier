@@ -57,21 +57,26 @@ def query(text : str):
     return query_result
 
 
-def query_random_sample(filters):
+def query_random_sample(filter):
     chroma_client = chromadb.PersistentClient(path=PERSISTENT_STORAGE, settings=settings)
     collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
     
     query_result = collection.get(
-        where=filters,
+        where=filter,
     )
 
+    return query_result
+
 def create_filter(metadata):
-    filter = {"$or": []}
+    filter = {"$and": []}
     for key, (input_type, val1, val2) in metadata.items():
         if input_type == "object":
-            filter["$or"].append({key: {"$eq": val1}})
+            or_class_filter = {"$or": []}
+            for val in val1:
+                or_class_filter["$or"].append({key: {"$eq": val}})
+            filter["$and"].append(or_class_filter)
         else:
-            filter["$or"].append(
+            filter["$and"].append(
                 {
                     "$and" : [
                         {key: {"$gte": val1}},
@@ -90,12 +95,14 @@ from pprint import pprint
 
 # pprint(get_metadata_type_and_classes())
 
-
-
-pprint(create_filter({
-    "subreddit": ("object", "anime", None),
+filter = create_filter({
+    "subreddit": ("object", ["anime", "harrypotter"], None),
     "ups": ("int64", 0, 100),
-}))
+})
+
+pprint(filter)
+
+pprint(query_random_sample(filter))
 
 # {
 #     "$or"[

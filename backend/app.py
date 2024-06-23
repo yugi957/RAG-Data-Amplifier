@@ -10,6 +10,7 @@ from chromadb.utils import embedding_functions
 from chromadb.config import Settings
 import torch
 import api
+from api import generate_data
 
 
 app = Flask(__name__)
@@ -128,10 +129,14 @@ def process_augmentation(tags, modifier):
         socketio.emit('augment_progress', {'progress': 50})
 
     if modifier:
-        output = api.query_semantic(modifier, filter)
+        retrieval = api.query_semantic(modifier, filter)
+        generation = generate_data(retrieval)
     else:
-        output = api.query_random_sample(filter)
-    print(output)
+        retrieval = api.query_random_sample(filter)
+        generation = generate_data(retrieval)
+    print(retrieval)
+    print('\n')
+    print(generation)
     
     # Simulate data augmentation and generating sample texts
     sample_texts = ["Sample text with tags " + ", ".join(tags) + f" and modifier {modifier}"]
@@ -141,4 +146,4 @@ def process_augmentation(tags, modifier):
     socketio.emit('augment_completed', {'sample_texts': sample_texts})
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

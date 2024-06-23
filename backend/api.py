@@ -9,11 +9,20 @@ from sklearn.manifold import TSNE
 import numpy as np
 from chromadb.config import Settings
 import matplotlib.pyplot as plt
+import openai
+from openai import OpenAI
+from dotenv import load_dotenv
+from flask import Flask, request, jsonify
 
 settings = Settings(
     allow_reset=True,
 )
 
+load_dotenv()
+
+client = OpenAI(
+    api_key=os.environ.get('OPENAI_API_KEY')
+)
 
 def store_dataframe(df: pd.DataFrame):
     chroma_client = chromadb.PersistentClient(
@@ -100,6 +109,32 @@ def query_random_sample(filter, n_results=5):
         "ids": [id for _, id, _ in random_sample],
         "metadatas": [metadata for _, _, metadata in random_sample]
     }
+
+def generate_data(shots):
+    # Retrieve examples and the input prompt from the request
+    # Construct the few-shot prompt
+    few_shot_prompt = "Use these documents::::"
+    for shot in shots['documents']:
+        few_shot_prompt += f"{shot}\n\n"
+    few_shot_prompt += f":::to generate 10 different texts that are similar to those documents considering context, writing style, and topic in the format start 1: :end 1, start 2: :end 2, ..., start 10: :end 10\n\n"
+
+    # Make a request to the OpenAI API using the new interface
+    try:
+        stream = client.chat.completions.create(
+            model="gpt-4o",  # or another suitable model
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": few_shot_prompt}
+            ],
+            max_tokens=2000
+        )
+        # print(stream)
+        response = stream.choices[0].message.content
+        print(response)
+    except openai.APIStatusError as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 
 def query_semantic(text: str, filter, n_results=5):

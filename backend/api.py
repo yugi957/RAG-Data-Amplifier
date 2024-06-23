@@ -17,6 +17,8 @@ import re
 from groq import Groq
 
 
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+
 settings = Settings(
     allow_reset=True,
 )
@@ -265,7 +267,7 @@ def histogram(db_distances, generated_distances):
     plt.hist(db_distances, bins=100, alpha=0.5, label='original')
     plt.hist(generated_distances, bins=100, alpha=0.5, label='generated')
     plt.legend(loc='upper right')
-    plt.show()
+    plt.savefig(f"{DIR_PATH}/download/histogram.png")
 
 
 def generate_embeddings(df: pd.DataFrame):
@@ -273,6 +275,17 @@ def generate_embeddings(df: pd.DataFrame):
     embeddings = EMBEDDING_FUNCTION(texts)
     embeddings = np.array(embeddings)
     return embeddings
+
+def generate_histogram(filter):
+    middle = middle_embedding_vectordb(filter)
+    distances_original = distances_from_middle_db(middle, filter)
+
+    df = pd.read_csv(f"{DIR_PATH}/download/output.csv")
+    embeddings = generate_embeddings(df)
+    distances_generated = distances_from_middle(middle, embeddings)
+
+    histogram(distances_original, distances_generated)
+
 
 
 # def average_embedding(embeddings):

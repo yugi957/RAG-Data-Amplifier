@@ -119,6 +119,7 @@ h2 {
 
 .tag-box {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
@@ -169,29 +170,45 @@ h2 {
 }
 
 .dropdown-menu {
-    display: none;
-    flex-direction: column;
-    background-color: #1f1f1f;
-    border: 1px solid #333;
-    border-radius: 5px;
-    padding: 10px;
-}
-
-.dropdown-menu.active {
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+    width: 100%;
 }
 
 .dropdown-item {
-    padding: 5px 10px;
+    padding: 10px;
     color: #fff;
     cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .dropdown-item:hover {
-    background-color: #333;
+    background-color: #555;
 }
 
 .dropdown-item.selected {
     background-color: #7f7fff;
     color: #000;
+}
+
+.dropdown-operator {
+    width: 50px;
+    padding: 5px;
+    background-color: #2a2a2a;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 5px;
+}
+
+.dropdown-value {
+    width: 100px;
+    padding: 5px;
+    background-color: #2a2a2a;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 5px;
 }

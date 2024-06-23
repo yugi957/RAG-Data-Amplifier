@@ -1,5 +1,5 @@
 const socket = io('http://127.0.0.1:5000');
-let selectedDropdownItems = [];
+let queries = {};
 
 socket.on('progress', (data) => {
     const progressBar = document.getElementById('progressBar');
@@ -91,18 +91,20 @@ async function fetchTags() {
 }
 
 function populateTags(tags) {
+    console.log('Tags:', tags);
     const tagBox = document.querySelector('.tag-box');
     tagBox.innerHTML = '';
-    tags.forEach(tag => {
+    Object.keys(tags).forEach(tag => {
         const button = document.createElement('button');
         button.className = 'tag';
         button.textContent = tag;
-        button.onclick = () => toggleDropdown(tag, button);
+        button.onclick = () => toggleDropdown(tags[tag], button);
         tagBox.appendChild(button);
     });
 }
 
-function toggleDropdown(tag, button) {
+function toggleDropdown(data, button) {
+    console.log(data)
     button.classList.toggle('selected');
     const dropdownContainer = document.querySelector('.dropdown-container');
     dropdownContainer.innerHTML = '';  // Clear previous dropdowns
@@ -110,46 +112,85 @@ function toggleDropdown(tag, button) {
         const dropdownMenu = document.createElement('div');
         dropdownMenu.className = 'dropdown-menu active';
         // Replace these items with actual data from your server
-        const items = ["Item1", "Item2", "Item3"];
-        items.forEach(item => {
-            const dropdownItem = document.createElement('div');
-            dropdownItem.className = 'dropdown-item';
-            dropdownItem.textContent = item;
-            dropdownItem.onclick = () => {
-                dropdownItem.classList.toggle('selected');
-                toggleSelectedItem(dropdownItem.textContent);
-            };
-            dropdownMenu.appendChild(dropdownItem);
-        });
-        dropdownContainer.appendChild(dropdownMenu);
+        if (data[0] === 'object') {
+            const items = data[1];
+            queries[button.textContent] = [data[0], [], null];
+            items.forEach(item => {
+                const dropdownItem = document.createElement('div');
+                dropdownItem.className = 'dropdown-item';
+                dropdownItem.textContent = item;
+                dropdownItem.onclick = () => {
+                    dropdownItem.classList.toggle('selected');
+                    toggleSelectedItem(button.textContent, dropdownItem.textContent);
+                };
+                dropdownMenu.appendChild(dropdownItem);
+            });
+            dropdownContainer.appendChild(dropdownMenu);
+        }
+        else {
+            const textEntryDiv = document.createElement('div');
+            textEntryDiv.className = 'text-entry';
+
+            const input1 = document.createElement('input');
+            input1.type = 'text';
+            input1.placeholder = '0';
+            input1.className = 'text-input';
+
+            const input2 = document.createElement('input');
+            input2.type = 'text';
+            input2.placeholder = 'Text Entry 2';
+            input2.className = '0';
+
+            const separator = document.createTextNode(' - ');
+
+            textEntryDiv.appendChild(input1);
+            textEntryDiv.appendChild(separator);
+            textEntryDiv.appendChild(input2);
+
+            queries[button.textContent] = [data[0], null, null];
+
+            input1.addEventListener('input', () => updateSelectedEntries(button.textContent, input1.value, input2.value));
+            input2.addEventListener('input', () => updateSelectedEntries(button.textContent, input1.value, input2.value));
+
+            dropdownContainer.appendChild(textEntryDiv);
+        }
+    }
+    else {
+        delete queries[button.textContent];
     }
 }
 
-function toggleSelectedItem(item) {
-    const index = selectedDropdownItems.indexOf(item);
+function updateSelectedEntries(tag, value1, value2) {
+    queries[tag][1] = value1;
+    queries[tag][2] = value2;
+}
+
+function toggleSelectedItem(tag, subtag) {
+    const index = queries[tag][1].indexOf(subtag);
     if (index === -1) {
-        selectedDropdownItems.push(item);
+        queries[tag][1].push(subtag);
     } else {
-        selectedDropdownItems.splice(index, 1);
+        queries[tag][1].splice(index, 1);
     }
-    console.log('Selected items:', selectedDropdownItems);
+    console.log('Selected items:', queries);
 }
 
 async function augmentData() {
     const augmentDataBtn = document.getElementById('augmentDataBtn');
+    console.log('Augmenting Data:', queries);
     augmentDataBtn.disabled = true;
     augmentDataBtn.textContent = "Processing...";
 
     const selectedTags = Array.from(document.querySelectorAll('.tag.selected')).map(button => button.textContent);
     const modifier = document.getElementById('modifierInput').value;
-
+    console.log('JSON Output:', { tags: selectedTags, items: queries, modifier: modifier });
     try {
         const response = await fetch('http://127.0.0.1:5000/augment', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ tags: selectedTags, items: selectedDropdownItems, modifier: modifier })
+            body: JSON.stringify({ tags: selectedTags, items: queries, modifier: modifier })
         });
 
         if (!response.ok) {

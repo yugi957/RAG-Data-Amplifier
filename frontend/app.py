@@ -4,6 +4,11 @@ from flask_socketio import SocketIO, emit
 import os
 import time
 from threading import Lock
+import chromadb
+import pandas as pd
+from chromadb.utils import embedding_functions
+import torch
+
 
 app = Flask(__name__)
 CORS(app)
@@ -38,17 +43,57 @@ def upload_file():
         return jsonify({"message": "File uploaded successfully", "filename": file.filename}), 200
 
 def process_file(file_path):
-    for progress in range(0, 101, 40):
-        socketio.sleep(1)
-        with progress_lock:
-            progress_data["progress"] = progress
-            socketio.emit('progress', {'progress': progress})
-    # Simulate file processing and generating tags
-    tags = ["Tag1", "Tag2", "Tag3"]
+    COLLECTION_NAME = "collection"
+    EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+    PERSISTENT_STORAGE = "vector_db"
+
+    device = "cpu"
+
+    EMBEDDING_FUNCTION = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=EMBEDDING_MODEL, device=device)
+
     with progress_lock:
-        progress_data["tags"] = tags
+        progress_data["progress"] = 15
+        socketio.emit('progress', {'progress': 15})
+
+    df = pd.read_csv(file_path)
+    chroma_client = chromadb.PersistentClient(path=PERSISTENT_STORAGE)
+    collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
+    
+    
+    with progress_lock:
+        progress_data["progress"] = 30
+        socketio.emit('progress', {'progress': 30})
+
+    texts = df['text'].tolist()
+    ids = [str(i) for i in range(0, len(texts))] # list(map(str, range(len(texts))
+    df.drop(columns=['text'], inplace=True)
+    metadatas = df.to_dict(orient='records')
+    
+    # collection.add(
+    #     documents=texts,
+    #     ids=ids,
+    #     metadatas=metadatas
+    # )
+
+    with progress_lock:
+        progress_data["progress"] = 85
+        socketio.emit('progress', {'progress': 85})
+
+    metadata_column_types = dict(df.dtypes)
+    metadata_type_and_classes = {}
+    for column_name, column_type in metadata_column_types.items():
+        if column_type == 'object':
+            print(str(column_type))
+            uniques_values = df[column_name].unique()
+            # if len(uniques_values) < 30:
+            metadata_type_and_classes[column_name] = (str(column_type), list(uniques_values))
+        else:
+            metadata_type_and_classes[column_name] = (str(column_type), None)
+    
+    with progress_lock:
+        progress_data["tags"] = metadata_type_and_classes
     socketio.emit('progress', {'progress': 100})
-    socketio.emit('completed', {'tags': tags})
+    socketio.emit('completed', {'tags': progress_data["tags"]})
 
 @app.route('/tags', methods=['GET'])
 def get_tags():

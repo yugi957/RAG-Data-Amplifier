@@ -117,7 +117,7 @@ def parse_text_data(text):
     matches = re.findall(pattern, text)
     return matches
 
-def generate_data(shots, n_per_access=20):
+def generate_data(shots, n_per_access=10):
     # Retrieve examples and the input prompt from the request
     # Construct the few-shot prompt
     few_shot_prompt = "Use these documents::::"
@@ -135,10 +135,12 @@ def generate_data(shots, n_per_access=20):
             ],
             max_tokens=4096
         )
+        print(stream.choices[0].message.content, flush=True)
         response = stream.choices[0].message.content
         parsed_texts = parse_text_data(response)
         # for text in parsed_texts:
             # print(text)
+        print(parsed_texts, flush=True)
         return parsed_texts
     except openai.APIStatusError as e:
         return jsonify({"error": str(e)}), 500

@@ -12,6 +12,7 @@ import torch
 import api
 from api import generate_data
 
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
 app = Flask(__name__)
 CORS(app)
@@ -128,13 +129,16 @@ def process_augmentation(tags, modifier):
 
     if modifier:
         retrieval = api.query_semantic(modifier, filter)
+        print(f"Retrieval: {retrieval}", flush=True)
     n_per_access = 20
     df = pd.DataFrame(columns=["text"])
     for i in range(int(200 / n_per_access)):
             if not modifier:
                 retrieval = api.query_random_sample(filter)
+                print(f"Retrieval: {retrieval} from no modifier", flush=True)
             print(f'{i} of {200/n_per_access}', flush=True)
             generation = generate_data(retrieval)
+            print(generation)
             for text in generation:
                 df.loc[len(df.index)] = text
     # print(retrieval, flush=True)
@@ -148,6 +152,9 @@ def process_augmentation(tags, modifier):
         progress_data["augment_sample_texts"] = sample_texts
     socketio.emit('augment_progress', {'progress': 100})
     socketio.emit('augment_completed', {'sample_texts': sample_texts})
+
+
+    df.to_csv(f'{DIR_PATH}/augmented_data.csv', index=False)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

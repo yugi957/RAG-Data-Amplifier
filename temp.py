@@ -4,8 +4,13 @@ import pandas as pd
 # if is csv files
 files = [f for f in os.listdir('./dataset/reddit-dataset') if f.endswith('.csv')]
 
+
 initial_path = './dataset/reddit-dataset/'
 save_path = './dataset/formatted-reddit-dataset/'
+
+
+os.mkdir(save_path)
+
 
 headers = ["text","id","subreddit","meta","time","author","ups","downs","authorlinkkarma","authorkarma","authorisgold"]
 
@@ -23,6 +28,12 @@ for file in files:
     df.columns = headers
     # drop first row
     df = df.iloc[1:]
+    # drop all rows with just white space in text
+    df = df[df['text'].str.strip().astype(bool)]
+    df = df.dropna()
+
+    # only first 1000 rows
+    df = df.head(1000)
     
     #save to new file
     df.to_csv(f"{save_path}{file}", index=False)

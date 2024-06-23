@@ -165,12 +165,12 @@ def generate_data(shots, n_per_access=10):
             stream=False,
             stop=None,
         )
-        print(stream.choices[0].message.content, flush=True)
+        # print(stream.choices[0].message.content, flush=True)
         response = stream.choices[0].message.content
         parsed_texts = split_generated_text(response)
         # for text in parsed_texts:
             # print(text)
-        print(parsed_texts, flush=True)
+        # print(parsed_texts, flush=True)
         return parsed_texts
     except openai.APIStatusError as e:
         return jsonify({"error": str(e)}), 500

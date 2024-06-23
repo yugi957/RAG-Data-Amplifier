@@ -218,3 +218,15 @@ h2 {
     border: 1px solid #333;
     border-radius: 5px;
 }
+
+/* Add this to your existing CSS file */
+
+.chart-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto; /* Center the image within the parent container */
+    border-radius: 8px; /* Optional: Add some rounding to the corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Add a slight shadow for a better visual */
+}

@@ -222,18 +222,26 @@ function displaySampleTexts(sampleTexts) {
 }
 
 function displayDataAnalysis(charts) {
+    console.log("CREATING CHART")
     const analysisDiv = document.querySelector('.analysis');
     analysisDiv.innerHTML = '';
     charts.forEach(chart => {
-        const canvas = document.createElement('canvas');
-        analysisDiv.appendChild(canvas);
-        new Chart(canvas, chart);
-    });
-}
+        const imgBase64 = 'data:image/png;base64,' + chart; // truncated for brevity
 
-async function displayDataAnalysis() {
+        // Create an img element
+        const imgElement = document.createElement('img');
+        imgElement.src = imgBase64;
+        imgElement.alt = 'Generated Plot';
+        imgElement.classList.add('chart-img');
 
-}
+        // Append the img element to the container
+        document.getElementById('analysis').appendChild(imgElement);
+        });
+    }
+
+// async function displayDataAnalysis() {
+
+// }
 
 async function downloadFile() {
     try {

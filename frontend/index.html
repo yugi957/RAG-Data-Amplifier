@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RAG Data Augmenter</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.min.js"></script>
 </head>
@@ -50,12 +51,12 @@
                 <div class="flex-item">
                 </div>
                 <div class="flex-item">
-                    <button class="btn" id="analyzeDataBtn" onclick="analyzeData()">Generate Clusters</button>
+                    <button class="btn" id="analyzeDataBtn" onclick="analyzeData()" style="margin:10px">Analyze Data</button>
                 </div>
                 <div class="flex-item">
                 </div>
             </div>
-            <div class="analysis"></div>
+            <div class="analysis" id="analysis"></div>
         </div>
     </div>
     <script src="js/script.js"></script>

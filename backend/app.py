@@ -123,27 +123,29 @@ def process_augmentation(tags, modifier):
 
     if modifier:
         retrieval = api.query_semantic(modifier, filter)
+    n_per_access = 60
         print(f"Retrieval: {retrieval}", flush=True)
     n_per_access = 20
+    total = 3000
     df = pd.DataFrame(columns=["text"])
-    for i in range(int(200 / n_per_access)):
+    for i in range(int(total / n_per_access)):
             with progress_lock:
-                progress_data["augment_progress"] = 100 * i * n_per_access / 200
-                socketio.emit('augment_progress', {'progress': 100 * i * n_per_access / 200})
+                progress_data["augment_progress"] = 100 * i * n_per_access / total
+                socketio.emit('augment_progress', {'progress': 100 * i * n_per_access / total})
 
             if not modifier:
                 retrieval = api.query_random_sample(filter)
                 print(f"Retrieval: {retrieval} from no modifier", flush=True)
-            print(f'{i} of {200/n_per_access}', flush=True)
+            print(f'{i} of {total/n_per_access}', flush=True)
             
             generation = generate_data(retrieval)
-            print(generation)
+            print(generation, flush=True)
             for text in generation:
                 df.loc[len(df.index)] = text
     # print(retrieval, flush=True)
     # print('\n')
     # print(generation, flush=True)
-    # print(df)
+    print(df, flush=True)
     
     # Simulate data augmentation and generating sample texts
     sample_texts = ["Sample text with tags " + ", ".join(tags) + f" and modifier {modifier}"]

@@ -14,6 +14,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import re
+from groq import Groq
+
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -23,8 +25,11 @@ settings = Settings(
 
 load_dotenv()
 
-client = OpenAI(
-    api_key=os.environ.get('OPENAI_API_KEY')
+# client = OpenAI(
+#     api_key=os.environ.get('OPENAI_API_KEY')
+# )
+client = Groq(
+    api_key=os.environ.get("GROQ_API_KEY"),
 )
 
 def store_dataframe(df: pd.DataFrame):
@@ -119,27 +124,46 @@ def parse_text_data(text):
     matches = re.findall(pattern, text)
     return matches
 
+def split_generated_text(generated_text, delimiter='?\0?'):
+    return generated_text.split(delimiter)
+
 def generate_data(shots, n_per_access=10):
     # Retrieve examples and the input prompt from the request
     # Construct the few-shot prompt
     few_shot_prompt = "Use these documents::::"
     for shot in shots['documents']:
         few_shot_prompt += f"{shot}\n\n"
-    few_shot_prompt += f":::to generate {n_per_access} different texts that are similar to those documents considering context, writing style, and topic in the format start 1: :end 1, start 2: :end 2, ..., start {n_per_access}: :end {n_per_access}\n\n"
+    # few_shot_prompt += f":::to generate {n_per_access} different texts that are similar to those documents considering context, writing style, and topic in the format start 1: :end 1, start 2: :end 2, ..., start {n_per_access}: :end {n_per_access}\n\n"
+    few_shot_prompt += f":::to generate {n_per_access} different texts that are similar to those documents considering context, writing style, and topic, and they should be separated by the string '?\0?'"
+
 
     # Make a request to the OpenAI API using the new interface
     try:
+        # stream = client.chat.completions.create(
+        #     model="gpt-4o",  # or another suitable model
+        #     messages=[
+        #         {"role": "system", "content": "You are a helpful assistant."},
+        #         {"role": "user", "content": few_shot_prompt}
+        #     ],
+        #     max_tokens=4096
+        # )
         stream = client.chat.completions.create(
-            model="gpt-4o",  # or another suitable model
+            model="llama3-8b-8192",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": few_shot_prompt}
+                {
+                    "role": "user",
+                    "content": few_shot_prompt
+                }
             ],
-            max_tokens=4096
+            temperature=1,
+            max_tokens=3128,
+            top_p=1,
+            stream=False,
+            stop=None,
         )
         print(stream.choices[0].message.content, flush=True)
         response = stream.choices[0].message.content
-        parsed_texts = parse_text_data(response)
+        parsed_texts = split_generated_text(response)
         # for text in parsed_texts:
             # print(text)
         print(parsed_texts, flush=True)

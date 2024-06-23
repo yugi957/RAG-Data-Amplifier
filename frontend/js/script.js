@@ -138,7 +138,7 @@ function toggleDropdown(data, button) {
 
             const input2 = document.createElement('input');
             input2.type = 'text';
-            input2.placeholder = 'Text Entry 2';
+            input2.placeholder = '0';
             input2.className = '0';
 
             const separator = document.createTextNode(' - ');
@@ -161,8 +161,8 @@ function toggleDropdown(data, button) {
 }
 
 function updateSelectedEntries(tag, value1, value2) {
-    queries[tag][1] = value1;
-    queries[tag][2] = value2;
+    queries[tag][1] = parseFloat(value1);
+    queries[tag][2] = parseFloat(value2);
 }
 
 function toggleSelectedItem(tag, subtag) {
@@ -227,7 +227,7 @@ async function generateClusters() {
 
 async function downloadFile() {
     try {
-        const response = await fetch("TEST", {
+        const response = await fetch("http://127.0.0.1:5000/download", {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/octet-stream'
@@ -243,7 +243,7 @@ async function downloadFile() {
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = 'downloaded_file'; // You can set the filename dynamically if needed
+        a.download = 'output.csv'; // Set the filename dynamically if needed
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);

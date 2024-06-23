@@ -19,6 +19,12 @@ socket.on('augment_progress', (data) => {
 
 socket.on('augment_completed', (data) => {
     displaySampleTexts(data.sample_texts);
+    document.getElementById('downloadGeneratedData').disabled = false;
+    confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+    });
 });
 
 function showFileName() {
@@ -143,3 +149,37 @@ async function generateClusters() {
     // Implement the logic to generate clusters here
     alert("Generate Clusters button clicked!");
 }
+
+async function downloadFile() {
+    try {
+        const response = await fetch("TEST", {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/octet-stream'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok ' + response.statusText);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'downloaded_file'; // You can set the filename dynamically if needed
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error) {
+        console.error('Error downloading file:', error);
+        alert('Error downloading file: ' + error.message);
+    }
+}
+
+// Example usage: Call this function when a button is clicked
+document.getElementById('downloadFileBtn').addEventListener('click', () => {
+    downloadFile('http://127.0.0.1:5000/download'); // Replace with your actual endpoint
+});

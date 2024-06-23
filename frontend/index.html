@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RAG Data Augmenter</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.min.js"></script>
 </head>
 <body>
@@ -40,7 +41,9 @@
             <div class="progress-bar">
                 <div class="progress" id="augmentProgressBar"></div>
             </div>
+            <h3>Sample Generated Text</h3>
             <div class="sample-text"></div>
+            <button class="btn" id="downloadGeneratedData" onclick="downloadFile()" disabled>output.csv</button>
             <div class="flexbox">
                 <div class="flex-item">
                     <p>Text for cluster generation</p>

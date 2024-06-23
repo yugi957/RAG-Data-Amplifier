@@ -91,7 +91,6 @@ def process_file(file_path):
     metadata_type_and_classes = {}
     for column_name, column_type in metadata_column_types.items():
         if column_type == 'object':
-            print(str(column_type))
             uniques_values = df[column_name].unique()
             # if len(uniques_values) < 30:
             metadata_type_and_classes[column_name] = (str(column_type), list(uniques_values))
@@ -122,7 +121,6 @@ def process_augmentation(tags, modifier):
         socketio.emit('augment_progress', {'progress': 25})
 
     filter = api.create_filter(tags)
-    print(filter)
 
     with progress_lock:
         progress_data["augment_progress"] = 50
@@ -130,13 +128,19 @@ def process_augmentation(tags, modifier):
 
     if modifier:
         retrieval = api.query_semantic(modifier, filter)
-        generation = generate_data(retrieval)
-    else:
-        retrieval = api.query_random_sample(filter)
-        generation = generate_data(retrieval)
-    print(retrieval)
-    print('\n')
-    print(generation)
+    n_per_access = 20
+    df = pd.DataFrame(columns=["text"])
+    for i in range(int(200 / n_per_access)):
+            if not modifier:
+                retrieval = api.query_random_sample(filter)
+            print(f'{i} of {200/n_per_access}', flush=True)
+            generation = generate_data(retrieval)
+            for text in generation:
+                df.loc[len(df.index)] = text
+    # print(retrieval, flush=True)
+    # print('\n')
+    # print(generation, flush=True)
+    # print(df)
     
     # Simulate data augmentation and generating sample texts
     sample_texts = ["Sample text with tags " + ", ".join(tags) + f" and modifier {modifier}"]

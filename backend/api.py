@@ -13,6 +13,7 @@ import openai
 from openai import OpenAI
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+import re
 
 settings = Settings(
     allow_reset=True,
@@ -89,7 +90,8 @@ def query_all(filter):
     return query_result
 
 
-def query_random_sample(filter, n_results=5):
+def query_random_sample(filter, n_results=10):
+    # print(filter, flush=True)
     chroma_client = chromadb.PersistentClient(
         path=PERSISTENT_STORAGE, settings=settings)
     collection = chroma_client.get_or_create_collection(
@@ -110,13 +112,18 @@ def query_random_sample(filter, n_results=5):
         "metadatas": [metadata for _, _, metadata in random_sample]
     }
 
-def generate_data(shots):
+def parse_text_data(text):
+    pattern = r'start \d+: (.+?) :end \d+'
+    matches = re.findall(pattern, text)
+    return matches
+
+def generate_data(shots, n_per_access=20):
     # Retrieve examples and the input prompt from the request
     # Construct the few-shot prompt
     few_shot_prompt = "Use these documents::::"
     for shot in shots['documents']:
         few_shot_prompt += f"{shot}\n\n"
-    few_shot_prompt += f":::to generate 10 different texts that are similar to those documents considering context, writing style, and topic in the format start 1: :end 1, start 2: :end 2, ..., start 10: :end 10\n\n"
+    few_shot_prompt += f":::to generate {n_per_access} different texts that are similar to those documents considering context, writing style, and topic in the format start 1: :end 1, start 2: :end 2, ..., start {n_per_access}: :end {n_per_access}\n\n"
 
     # Make a request to the OpenAI API using the new interface
     try:
@@ -126,18 +133,20 @@ def generate_data(shots):
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": few_shot_prompt}
             ],
-            max_tokens=2000
+            max_tokens=4096
         )
-        # print(stream)
         response = stream.choices[0].message.content
-        print(response)
+        parsed_texts = parse_text_data(response)
+        # for text in parsed_texts:
+            # print(text)
+        return parsed_texts
     except openai.APIStatusError as e:
         return jsonify({"error": str(e)}), 500
 
 
 
 
-def query_semantic(text: str, filter, n_results=5):
+def query_semantic(text: str, filter, n_results=10):
     chroma_client = chromadb.PersistentClient(
         path=PERSISTENT_STORAGE, settings=settings)
     collection = chroma_client.get_or_create_collection(
@@ -152,10 +161,13 @@ def query_semantic(text: str, filter, n_results=5):
 
 
 def create_filter(metadata):
-    if metadata is None:
+    # print(metadata, flush=True)
+    if metadata is None or metadata == {}:
         return {}
     if len(metadata.items()) == 1 and list(metadata.values())[0][0] == "object":
-        key, (input_type, val1, val2) = metadata.items()
+        # print(metadata.items(), flush=True)
+        key, value = list(metadata.items())[0]  # Unpack properly here
+        input_type, val1, val2 = value
 
         if len(val1) == 1:
             return {key: {"$eq": val1[0]}}

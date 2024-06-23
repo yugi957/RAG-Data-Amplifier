@@ -8,6 +8,8 @@ import json
 from sklearn.manifold import TSNE
 import numpy as np
 from chromadb.config import Settings
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import openai
 from openai import OpenAI
@@ -264,6 +266,8 @@ def distances_from_middle(middle, embeddings):
 
 
 def histogram(db_distances, generated_distances):
+    plt.clf()
+
     plt.hist(db_distances, bins=100, alpha=0.5, label='original')
     plt.hist(generated_distances, bins=100, alpha=0.5, label='generated')
     plt.legend(loc='upper right')

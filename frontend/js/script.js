@@ -1,4 +1,5 @@
 const socket = io('http://127.0.0.1:5000');
+let selectedDropdownItems = [];
 
 socket.on('progress', (data) => {
     const progressBar = document.getElementById('progressBar');
@@ -96,9 +97,42 @@ function populateTags(tags) {
         const button = document.createElement('button');
         button.className = 'tag';
         button.textContent = tag;
-        button.onclick = () => button.classList.toggle('selected');
+        button.onclick = () => toggleDropdown(tag, button);
         tagBox.appendChild(button);
     });
+}
+
+function toggleDropdown(tag, button) {
+    button.classList.toggle('selected');
+    const dropdownContainer = document.querySelector('.dropdown-container');
+    dropdownContainer.innerHTML = '';  // Clear previous dropdowns
+    if (button.classList.contains('selected')) {
+        const dropdownMenu = document.createElement('div');
+        dropdownMenu.className = 'dropdown-menu active';
+        // Replace these items with actual data from your server
+        const items = ["Item1", "Item2", "Item3"];
+        items.forEach(item => {
+            const dropdownItem = document.createElement('div');
+            dropdownItem.className = 'dropdown-item';
+            dropdownItem.textContent = item;
+            dropdownItem.onclick = () => {
+                dropdownItem.classList.toggle('selected');
+                toggleSelectedItem(dropdownItem.textContent);
+            };
+            dropdownMenu.appendChild(dropdownItem);
+        });
+        dropdownContainer.appendChild(dropdownMenu);
+    }
+}
+
+function toggleSelectedItem(item) {
+    const index = selectedDropdownItems.indexOf(item);
+    if (index === -1) {
+        selectedDropdownItems.push(item);
+    } else {
+        selectedDropdownItems.splice(index, 1);
+    }
+    console.log('Selected items:', selectedDropdownItems);
 }
 
 async function augmentData() {
@@ -115,7 +149,7 @@ async function augmentData() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ tags: selectedTags, modifier: modifier })
+            body: JSON.stringify({ tags: selectedTags, items: selectedDropdownItems, modifier: modifier })
         });
 
         if (!response.ok) {
@@ -173,13 +207,20 @@ async function downloadFile() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+
+        // Trigger confetti effect
+        const button = document.getElementById('downloadGeneratedData');
+        const rect = button.getBoundingClientRect();
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: {
+                x: (rect.left + rect.width / 2) / window.innerWidth,
+                y: (rect.top + rect.height / 2) / window.innerHeight
+            }
+        });
     } catch (error) {
         console.error('Error downloading file:', error);
         alert('Error downloading file: ' + error.message);
     }
 }
-
-// Example usage: Call this function when a button is clicked
-document.getElementById('downloadFileBtn').addEventListener('click', () => {
-    downloadFile('http://127.0.0.1:5000/download'); // Replace with your actual endpoint
-});

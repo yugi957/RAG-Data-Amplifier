@@ -163,3 +163,35 @@ h2 {
 .flex-item p {
     margin: 0;
 }
+
+.dropdown-container {
+    margin-top: 10px;
+}
+
+.dropdown-menu {
+    display: none;
+    flex-direction: column;
+    background-color: #1f1f1f;
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.dropdown-menu.active {
+    display: flex;
+}
+
+.dropdown-item {
+    padding: 5px 10px;
+    color: #fff;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background-color: #333;
+}
+
+.dropdown-item.selected {
+    background-color: #7f7fff;
+    color: #000;
+}

@@ -136,13 +136,15 @@ filter = create_filter({
     "authorisgold" : ("float64", 1, 1)
 })
 
-pprint(filter)
+# pprint(filter)
 
 # pprint(query_all(filter))
 
 pprint(query_random_sample(filter, 5))
 
-# pprint(query_semantic("I love anime", filter, 5))
+pprint(query_semantic("Generate a ton of weeb data", filter, 5))
+
+
 # {
 #     "$or"[
 #         "subreddit": {
